@@ -13,12 +13,30 @@
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
-  <a class="skip-link" href="#workspace">입력으로 바로 가기</a>
-  <div class="shell">
+  <section id="lock" class="lock-screen" aria-labelledby="lock-title">
+    <div class="glass lock-card">
+      <h1 id="lock-title">수업 PPT 요청서 만들기</h1>
+      <p class="help">비밀번호를 입력해 주세요.</p>
+      <form id="login-form">
+        <div class="field">
+          <label for="password">비밀번호</label>
+          <input type="password" id="password" inputmode="numeric" autocomplete="current-password" maxlength="64" aria-describedby="lock-status" required>
+        </div>
+        <button id="login-submit" class="button primary" type="submit">들어가기</button>
+        <p id="lock-status" class="lock-status" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </section>
+  <div class="shell" hidden>
+    <a class="skip-link" href="#workspace">입력으로 바로 가기</a>
     <header class="site-header">
       <div class="header-copy"><h1>수업 PPT 요청서 만들기</h1>
-      <p id="draft-status" class="save-status" role="status">입력한 내용은 이 브라우저에 자동으로 저장돼요.</p></div>
-      <button id="reset" class="button quiet" type="button">새로 쓰기</button>
+      <p id="draft-status" class="save-status" role="status">입력한 내용은 이 브라우저에 자동으로 저장돼요.</p>
+      <p id="auth-status" class="save-status" role="status" aria-live="polite" hidden></p></div>
+      <div class="header-actions">
+        <button id="reset" class="button quiet" type="button">새로 쓰기</button>
+        <button id="logout" class="button quiet" type="button">로그아웃</button>
+      </div>
     </header>
     <nav class="progress" aria-label="요청서 작성 단계">
       <button type="button" data-step="0" aria-current="step"><span class="step-number">1</span><span>수업 정보</span></button>

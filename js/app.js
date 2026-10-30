@@ -1,8 +1,98 @@
+import { verifyPassword, isLoggedIn, saveLogin, clearLogin } from "./auth.js";
 import { validate, buildRequest, makeFileName, PAGE_TYPES, MOOD_CATEGORIES } from "./generator.js";
 
 const STORAGE_KEY = "class-maker:draft:v1";
 const MAX_PAGES = 40;
 const $ = (id) => document.getElementById(id);
+const shell = document.querySelector(".shell");
+let loginFailures = 0;
+let checkingPassword = false;
+let loginLockedUntil = 0;
+let loginTimer;
+
+function loginStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function unlock() {
+  $("lock").hidden = true;
+  shell.hidden = false;
+  $("password").value = "";
+  $("password").removeAttribute("aria-invalid");
+  loginFailures = 0;
+  showStep(0);
+}
+
+function showLock(message = "") {
+  shell.hidden = true;
+  $("lock").hidden = false;
+  $("password").value = "";
+  $("password").removeAttribute("aria-invalid");
+  $("lock-status").textContent = message;
+  $("auth-status").hidden = true;
+  $("password").focus();
+}
+
+function updateLoginLockout() {
+  const remaining = Math.max(0, Math.ceil((loginLockedUntil - Date.now()) / 1000));
+  $("password").disabled = remaining > 0;
+  $("login-submit").disabled = remaining > 0;
+  if (remaining > 0) {
+    $("lock-status").textContent = `${remaining}초 뒤에 다시 입력할 수 있어요.`;
+  } else {
+    clearInterval(loginTimer);
+    loginLockedUntil = 0;
+    loginFailures = 0;
+    $("lock-status").textContent = "비밀번호를 다시 입력해 주세요.";
+    $("password").focus();
+  }
+}
+
+$("login-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (checkingPassword || loginLockedUntil > 0) return;
+  checkingPassword = true;
+  $("login-submit").disabled = true;
+  $("login-submit").textContent = "확인하고 있어요…";
+  $("lock-status").textContent = "확인하고 있어요…";
+  $("password").disabled = true;
+  $("password").removeAttribute("aria-invalid");
+  const valid = await verifyPassword($("password").value);
+  $("password").value = "";
+  $("password").disabled = false;
+  $("login-submit").disabled = false;
+  $("login-submit").textContent = "들어가기";
+  checkingPassword = false;
+  if (valid) {
+    const saved = saveLogin(loginStorage());
+    $("auth-status").textContent = saved ? "" : "이 브라우저에서는 로그인 상태를 기억하지 못해요.";
+    $("auth-status").hidden = saved;
+    $("lock-status").textContent = "";
+    unlock();
+  } else {
+    loginFailures += 1;
+    $("password").setAttribute("aria-invalid", "true");
+    if (loginFailures >= 5) {
+      loginLockedUntil = Date.now() + 30000;
+      updateLoginLockout();
+      loginTimer = setInterval(updateLoginLockout, 1000);
+    } else {
+      $("lock-status").textContent = "비밀번호가 맞지 않아요. 다시 입력해 주세요.";
+      $("password").focus();
+    }
+  }
+});
+
+$("password").addEventListener("input", () => $("password").removeAttribute("aria-invalid"));
+$("logout").addEventListener("click", () => {
+  clearLogin(loginStorage());
+  showLock("로그아웃했어요.");
+});
+
 const normalize = (value) => typeof value === "string" ? value.replace(/\r\n/g, "\n").trim() : "";
 const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 const blankPage = () => ({ title: "", content: "", type: "", activity: "", visual: "", layout: "" });
@@ -479,3 +569,5 @@ syncDesignDetails();
 populateForm();
 showStep(0, false);
 if (restored) $("draft-status").textContent = "이전에 쓰던 내용을 불러왔어요.";
+if (isLoggedIn(loginStorage())) unlock();
+else showLock();

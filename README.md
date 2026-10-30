@@ -16,6 +16,32 @@
 
 같은 github.io 주소의 다른 프로젝트와 브라우저 저장 공간을 공유하므로 개인정보를 입력하지 마세요.
 
+## 접속 비밀번호 잠금
+
+접속하면 비밀번호를 먼저 확인합니다. 로그인한 브라우저는 ‘로그아웃’을 누르기 전까지 로그인 상태를 기억하며, 로그아웃해도 작성 중인 초안은 남습니다. 저장 공간이 차단된 브라우저에서는 현재 방문 동안만 이용할 수 있습니다. 비밀번호가 연속 5회 틀리면 30초 뒤 다시 입력할 수 있습니다.
+
+이 잠금은 브라우저에서만 비밀번호를 확인하는 간단한 잠금입니다. 코드를 아는 사람은 우회할 수 있으므로 중요한 정보를 보호하는 인증 수단으로 사용하지 마세요.
+
+비밀번호를 변경하려면 Node.js 24에서 새 salt와 PBKDF2-HMAC-SHA256 해시(32바이트)를 만든 뒤 `js/auth.js`의 `DEFAULT_PARAMS`에 있는 `saltHex`, `iterations`, `hashHex` 세 값을 교체하세요. 비밀번호 문자열은 UTF-8로 처리하며 앞뒤 공백도 그대로 사용합니다. 다음 PowerShell 명령의 `새비밀번호`는 자리표시자입니다. 실제 비밀번호 원문을 소스나 문서에 저장하지 마세요.
+
+```powershell
+$env:CLASS_MAKER_NEW_PASSWORD = '새비밀번호'
+@'
+import { randomBytes, pbkdf2Sync } from "node:crypto";
+const password = process.env.CLASS_MAKER_NEW_PASSWORD;
+const salt = randomBytes(16);
+const iterations = 210000;
+console.log(JSON.stringify({
+  saltHex: salt.toString("hex"),
+  iterations,
+  hashHex: pbkdf2Sync(password, salt, iterations, 32, "sha256").toString("hex"),
+}, null, 2));
+'@ | node --input-type=module
+Remove-Item Env:\CLASS_MAKER_NEW_PASSWORD
+```
+
+해시가 바뀌면 기존 브라우저에서도 새 비밀번호로 다시 로그인해야 합니다. 이 절차는 서버로 비밀번호를 보내지 않습니다. Web Crypto를 사용하므로 HTTPS 또는 로컬의 `http://localhost`에서 실행하세요.
+
 ## 로컬 실행
 
 프로젝트 폴더에서 PowerShell로 실행합니다. Python과 Node.js는 별도로 설치되어 있어야 합니다. npm 설치나 빌드는 필요 없습니다.
@@ -33,10 +59,13 @@ python -m http.server 8000 --bind 127.0.0.1
 
 ```powershell
 node --check js/app.js
+node --check js/auth.js
 node --test
 ```
 
 브라우저에서는 360px 너비와 데스크톱에서 네 단계 입력, .md/.txt 첫 줄 `@미리캔버스`, 자동 저장 복원, 페이지 0개·40개, 클립보드 거부, 키보드 포커스와 다크 모드를 확인합니다. `js/generator.js`는 요청서 생성 모듈이며 화면을 실행할 때 함께 있어야 합니다.
+
+잠금 화면에서는 비밀번호 입력 전 탭으로 작성 화면에 접근할 수 없는지, 로그인 후 새로고침·브라우저 재실행 시 유지되는지, 로그아웃 후 초안이 남는지, 연속 5회 실패 시 30초 동안 입력이 막히는지 확인합니다. 저장소를 차단한 경우에도 로그인 후 안내 문구가 보이고 현재 방문 동안 작성할 수 있어야 합니다.
 
 ## GitHub Pages 배포
 
