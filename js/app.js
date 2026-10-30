@@ -1,4 +1,4 @@
-import { validate, buildRequest, makeFileName, PAGE_TYPES, MOOD_PRESETS } from "./generator.js";
+import { validate, buildRequest, makeFileName, PAGE_TYPES, MOOD_CATEGORIES } from "./generator.js";
 
 const STORAGE_KEY = "class-maker:draft:v1";
 const MAX_PAGES = 40;
@@ -8,7 +8,8 @@ const isObject = (value) => value !== null && typeof value === "object" && !Arra
 const blankPage = () => ({ title: "", content: "", type: "", activity: "", visual: "", layout: "" });
 const defaults = () => ({
   basics: { audience: "", subject: "", goal: "", content: "" },
-  design: { moods: [], moodNote: "", font: "", mainColor: "", extra: "" },
+  design: { moodCategory: "", moods: [], moodNote: "", font: "", mainColor: "", extra: "" },
+  pageCount: "",
   pages: [blankPage()],
 });
 
@@ -22,6 +23,8 @@ function restoreDraft() {
       || !Array.isArray(saved.design.moods) || !Array.isArray(saved.pages)
       || saved.pages.some((page) => !isObject(page))) return null;
     const restored = defaults();
+    const pageCount = normalize(saved.pageCount);
+    restored.pageCount = /^\d+$/.test(pageCount) && Number(pageCount) >= 1 && Number(pageCount) <= MAX_PAGES ? pageCount : "";
     for (const key of Object.keys(restored.basics)) {
       restored.basics[key] = normalize(saved.basics[key]).slice(0, ["audience", "subject"].includes(key) ? 200 : 3000);
     }
@@ -29,7 +32,14 @@ function restoreDraft() {
       const limit = key === "mainColor" ? 7 : key === "font" ? 200 : 3000;
       restored.design[key] = normalize(saved.design[key]).slice(0, limit);
     }
-    restored.design.moods = [...new Set(saved.design.moods.map(normalize).filter((mood) => MOOD_PRESETS.includes(mood)))];
+    const moods = saved.design.moods.map(normalize);
+    let category = MOOD_CATEGORIES.find((item) => item.id === saved.design.moodCategory);
+    // Legacy v1 drafts have no category; infer only when every mood belongs to one group.
+    if (!Object.hasOwn(saved.design, "moodCategory") && moods.length > 0) {
+      category = MOOD_CATEGORIES.find((item) => moods.every((mood) => item.moods.includes(mood)));
+    }
+    restored.design.moodCategory = category?.id || "";
+    restored.design.moods = category ? [...new Set(moods.filter((mood) => category.moods.includes(mood)))] : [];
     restored.pages = saved.pages.slice(0, MAX_PAGES).map((page) => {
       const clean = blankPage();
       for (const key of Object.keys(clean)) clean[key] = normalize(page[key]).slice(0, key === "title" ? 200 : 3000);
@@ -88,7 +98,7 @@ function renderErrors(errors) {
   for (const error of errors) {
     const item = element("li");
     item.append(element("span", "", error + " "));
-    const targetStep = /쪽|페이지/.test(error) ? 2 : 0;
+    const targetStep = /희망 페이지 수|쪽|페이지/.test(error) ? 2 : 0;
     const link = element("a", "", targetStep === 2 ? "페이지 구성으로 이동" : "수업 정보로 이동");
     link.setAttribute("href", `#step-${targetStep}`);
     link.addEventListener("click", (event) => {
@@ -126,7 +136,10 @@ function showStep(step, focus = true) {
 function renderMoods() {
   const chips = $("mood-chips");
   chips.replaceChildren();
-  for (const mood of MOOD_PRESETS) {
+  const category = MOOD_CATEGORIES.find((item) => item.id === data.design.moodCategory);
+  $("mood-category-help").hidden = Boolean(category);
+  $("mood-details").hidden = !category;
+  for (const mood of category?.moods || []) {
     const button = element("button", "chip", mood);
     button.type = "button";
     button.setAttribute("aria-pressed", String(data.design.moods.includes(mood)));
@@ -151,12 +164,12 @@ function syncColor() {
   else $("color-text").removeAttribute("aria-invalid");
 }
 
-function pageField(index, key, labelText, { rows = 3, required = false, select = false } = {}) {
+function pageField(index, key, labelText, { rows = 3, select = false } = {}) {
   const field = element("div", select ? "field page-type" : "field");
   const id = `page-${index}-${key}`;
-  const label = element("label", select ? "sr-only" : "", labelText + (required ? " *" : ""));
+  const label = element("label", select ? "sr-only" : "", labelText);
   label.setAttribute("for", id);
-  if (!required && !select) label.append(element("span", "optional", "선택"));
+  if (!select) label.append(element("span", "optional", "선택"));
   let input;
   if (select) {
     input = element("select");
@@ -170,7 +183,6 @@ function pageField(index, key, labelText, { rows = 3, required = false, select =
     input = element("input");
     input.type = "text";
     input.maxLength = 200;
-    input.required = required;
   } else {
     input = element("textarea");
     input.rows = rows;
@@ -236,7 +248,7 @@ function renderPages() {
       pageField(index, "layout", "레이아웃 메모"),
     );
     details.append(summary, body);
-    card.append(heading, pageField(index, "title", "제목", { required: true }), pageField(index, "content", "핵심 내용"), details);
+    card.append(heading, pageField(index, "title", "제목"), pageField(index, "content", "핵심 내용"), details);
     container.append(card);
   });
   container.append(addButton);
@@ -253,11 +265,15 @@ function updateDetailsToggle() {
 }
 
 function populateForm() {
+  $("desired-page-count").value = data.pageCount;
   document.querySelectorAll("[data-group][data-key]").forEach((input) => {
     input.value = data[input.dataset.group][input.dataset.key];
   });
   $("color-text").value = data.design.mainColor;
   $("color-picker").value = "#7fb3e6";
+  document.querySelectorAll('input[name="mood-category"]').forEach((radio) => {
+    radio.checked = radio.value === data.design.moodCategory;
+  });
   syncColor();
   renderMoods();
   renderPages();
@@ -268,6 +284,24 @@ document.querySelectorAll(".progress [data-step]").forEach((button) => {
 });
 $("previous").addEventListener("click", () => showStep(currentStep - 1));
 $("next").addEventListener("click", () => showStep(currentStep + 1));
+
+$("desired-page-count").addEventListener("input", () => {
+  const input = $("desired-page-count");
+  // Number inputs expose an empty value for incomplete numeric text.
+  data.pageCount = input.validity.badInput ? "invalid" : normalize(input.value);
+  changed();
+});
+
+document.querySelectorAll('input[name="mood-category"]').forEach((radio) => {
+  radio.addEventListener("change", () => {
+    if (!radio.checked) return;
+    const category = MOOD_CATEGORIES.find((item) => item.id === radio.value);
+    data.design.moodCategory = category?.id || "";
+    data.design.moods = data.design.moods.filter((mood) => category?.moods.includes(mood));
+    renderMoods();
+    changed();
+  });
+});
 
 document.querySelectorAll("[data-group][data-key]").forEach((input) => {
   input.addEventListener("input", () => {

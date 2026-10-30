@@ -41,9 +41,17 @@
       </section>
       <section id="step-1" class="step-panel" aria-labelledby="heading-1" hidden>
         <div class="section-heading"><h2 id="heading-1" tabindex="-1">디자인</h2>
-        <p class="section-note">분위기는 여러 개 선택할 수 있어요. 비우면 추천받아요.</p></div>
+        <p class="section-note">큰 분류를 고른 뒤 세부 분위기를 여러 개 선택할 수 있어요. 비우면 추천받아요.</p></div>
         <div class="design-grid"><div>
-        <fieldset class="mood-fieldset"><legend>디자인 분위기 <span class="optional">선택</span></legend><div id="mood-chips" class="chips"></div></fieldset>
+        <fieldset class="mood-fieldset"><legend>큰 분류 <span class="optional">선택</span></legend>
+          <div class="mood-category-options">
+            <label class="mood-category-option" for="mood-category-none"><input id="mood-category-none" type="radio" name="mood-category" value="" checked><span class="mood-category-name">선택 안 함</span></label>
+            <label class="mood-category-option" for="mood-category-school"><input id="mood-category-school" type="radio" name="mood-category" value="school" aria-describedby="mood-school-help"><span><span class="mood-category-name">학교수업 분위기</span><small id="mood-school-help" class="help">친근하고 재미있는 교실 느낌</small></span></label>
+            <label class="mood-category-option" for="mood-category-clean"><input id="mood-category-clean" type="radio" name="mood-category" value="clean" aria-describedby="mood-clean-help"><span><span class="mood-category-name">깔끔한 분위기</span><small id="mood-clean-help" class="help">정돈되고 세련된 발표 느낌</small></span></label>
+          </div>
+        </fieldset>
+        <p id="mood-category-help" class="help">먼저 큰 분류를 골라 주세요.</p>
+        <fieldset id="mood-details" class="mood-fieldset" hidden><legend>세부 분위기 <span class="optional">여러 개 선택</span></legend><div id="mood-chips" class="chips"></div></fieldset>
         <div class="field"><label for="mood-note">분위기 설명 <span class="optional">선택</span></label><textarea maxlength="3000" id="mood-note" data-group="design" data-key="moodNote" rows="3" placeholder="예: 새벽 하늘처럼 차분하고 신비로운 느낌"></textarea></div>
         </div><details id="design-details" class="optional-details" open><summary>디자인 자세히 정하기</summary><div class="details-body">
           <div class="field"><label for="font">희망 폰트 <span class="optional">선택</span></label><input id="font" maxlength="200" data-group="design" data-key="font" aria-describedby="font-help"><p id="font-help" class="help">비워 두면 Claude가 수업에 어울리는 폰트를 추천해 드려요.</p></div>
@@ -53,9 +61,9 @@
       </section>
       <section id="step-2" class="step-panel" aria-labelledby="heading-2" hidden>
         <div class="section-heading"><h2 id="heading-2" tabindex="-1">페이지 구성</h2>
-        <p class="section-note">제목은 필수예요. 나머지는 필요한 만큼 적어 주세요.</p></div>
-        <div class="page-toolbar"><p id="page-count" class="count" aria-live="polite"></p><span>최대 40쪽</span><button id="toggle-page-details" class="button quiet" type="button" aria-controls="pages" aria-expanded="false">모두 펼치기</button></div>
-        <p id="empty-pages" class="empty-state" hidden>아직 페이지가 없어요. ‘페이지 추가’를 눌러 첫 페이지를 만들어 주세요.</p>
+        <p class="section-note">페이지 내용은 선택이에요. 비워 두면 Claude가 수업 주제에 맞게 구성해요.</p></div>
+        <div class="page-toolbar"><p id="page-count" class="count" aria-live="polite"></p><span>최대 40쪽</span><div class="desired-page-count field"><label for="desired-page-count">희망 페이지 수 <span class="optional">선택</span></label><input id="desired-page-count" type="number" min="1" max="40" step="1" inputmode="numeric"></div><button id="toggle-page-details" class="button quiet" type="button" aria-controls="pages" aria-expanded="false">모두 펼치기</button></div>
+        <p id="empty-pages" class="empty-state" hidden>페이지를 비워 두면 Claude가 알아서 구성해요.</p>
         <div id="pages" class="page-list"><button id="add-page" class="button secondary add-page-card" type="button" aria-describedby="page-limit">＋ 페이지 추가</button></div>
         <p id="page-limit" class="warning" role="status" hidden>ⓘ 페이지는 40개까지 만들 수 있어요.</p>
         <p id="page-status" class="help" role="status"></p>
