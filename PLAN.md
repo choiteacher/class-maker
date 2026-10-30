@@ -1,0 +1,144 @@
+# PLAN.md — 미리캔버스 수업 PPT 요청서 생성기 (class_maker)
+
+## 개요
+- 목표: 교사가 수업 정보·디자인·페이지별 내용을 입력하면, Claude/Claude Code가 읽고 미리캔버스 커넥터로 수업용 프레젠테이션을 만들 수 있는 요청서(.md 또는 .txt)를 만들어 내려받게 한다.
+- 기술 제약: 순수 정적 HTML/CSS/JS(ES 모듈). 빌드 도구·npm 의존성 없음. 테스트는 Node 내장 `node --test`.
+- 배포·백엔드: **GitHub Pages만** (사용자 승인 2026-10-31). 백엔드·외부 API 없음. 저장소 루트를 그대로 Pages로 서비스(`.nojekyll` 포함).
+- 개인정보: 없음. 입력값은 사용자 브라우저 `localStorage`에 임시 저장(초안 자동 저장)만 한다. 외부 전송 없음.
+- 사용자 확정 사항(2026-10-31): 페이지 입력은 "기본 + 펼치면 선택 항목", 1단계에 '수업 내용' 칸 추가, 디자인 단계에 펼치면 폰트·메인 색·기타 디자인 서술 칸, 요청서에 "템플릿·폰트를 먼저 추천하고 선택받은 뒤 제작" 절차 명시, GitHub 저장소 생성·푸시까지 진행.
+- **가정(사용자 확인 대상)**: 필수 입력 = 수업 대상·과목·수업 목표·페이지 1개 이상(각 페이지 제목 필수). 페이지 최대 40개. 분위기는 프리셋 칩 다중 선택 + 자유 서술.
+
+### 폴더 구조(확정)
+```
+index.html            T-002
+css/style.css         T-002
+js/app.js             T-002  (DOM·상태·자동저장·다운로드)
+js/generator.js       T-001  (순수 함수. DOM 접근 금지)
+test/generator.test.js T-001
+package.json          T-001  ({"name":"class-maker","private":true,"type":"module","scripts":{"test":"node --test"}})
+.nojekyll  README.md  T-002
+```
+
+### 공통 규약
+- 전체 테스트 명령: `node --test` (프로젝트 루트, 인자 없음).
+- `js/generator.js`는 브라우저와 Node 양쪽에서 import 되는 ES 모듈. `document`/`window` 사용 금지.
+- 문자열 값은 모두 `trim()` 후 사용. 줄바꿈은 `\r\n`→`\n` 정규화. 출력 끝은 줄바꿈 1개.
+
+## 데이터 형식 (app.js ↔ generator.js)
+```js
+const data = {
+  basics: { audience: "초등 3학년", subject: "과학", goal: "자석의 성질을 설명할 수 있다.", content: "자석의 두 극..." },
+  design: { moods: ["신비로운", "밝고 깨끗한"], moodNote: "우주 느낌", font: "", mainColor: "#7FB3E6", extra: "" },
+  pages: [
+    { title: "표지", content: "자석의 비밀", type: "표지", activity: "", visual: "말굽자석 일러스트", layout: "" }
+  ]
+};
+```
+- `pages[].type` 값: `""`(지정 안 함) | `표지` | `도입·동기유발` | `학습 목표` | `개념 설명` | `활동` | `퀴즈·확인` | `정리` | `기타`.
+- 분위기 프리셋(app.js 칩): 신비로운, 밝고 깨끗한, 귀엽고 아기자기한, 차분하고 정돈된, 자연·친환경, 미래·과학, 전통·한국적, 활기찬.
+
+## 작업 단위
+| ID | 작업 | 선행 | 담당 | 등급 | 수정 허용 파일 | 완료 기준 | 상태 |
+|---|---|---|---|---|---|---|---|
+| T-001 | 요청서 생성 모듈 + 테스트 | 없음 | Codex | sol | js/generator.js, test/generator.test.js, package.json | `node --test` 통과(reviewer Windows 재실행) | [ ] |
+| T-002 | 화면(입력 단계·미리보기·다운로드) | 없음(병렬. generator 시그니처만 의존) | Codex | sol | index.html, css/style.css, js/app.js, .nojekyll, README.md | 아래 T-002 완료 기준 | [ ] |
+
+### T-001 상세 — js/generator.js
+공개 함수:
+```js
+export function validate(data)                 // → string[] 오류 문구(사용자용 한국어). 빈 배열이면 통과
+export function buildRequest(data, format)     // format: "md" | "txt" → string
+export function makeFileName(data, format, date = new Date()) // → "미리캔버스요청서_과학_20261031.md"
+export const PAGE_TYPES, MOOD_PRESETS          // 위 목록 배열
+```
+호출 예: `const errs = validate(data); if (!errs.length) download(buildRequest(data, "md"), makeFileName(data, "md"));`
+
+출력 규칙 (md):
+```
+@미리캔버스
+
+# 수업용 프레젠테이션 제작 요청서
+
+> 이 요청서를 읽은 Claude는 미리캔버스 커넥터를 사용해 아래 수업용 프레젠테이션을 만들어 주세요.
+
+## 작업 방식
+1. 아래 수업 정보로 제작 의도와 대상 학년을 파악해 자료의 방향을 정합니다.
+2. 미리캔버스 템플릿 중 수업 내용과 디자인 분위기에 맞는 디자인 후보를 3개 이상 추천하고, 제가 고른 뒤에 작업합니다.
+3. 교육 내용과 디자인에 맞는 폰트를 2~3개 추천하고, 제가 고른 뒤에 작업합니다.
+4. 페이지 구성은 아래 순서와 내용을 지키고, 대상 학년에 맞는 어휘와 글자 크기를 씁니다.
+5. 비어 있는 항목은 수업 목표에 맞게 적절히 채워 주세요.
+
+## 1. 수업 기본 정보
+- 수업 대상: 초등 3학년
+- 과목: 과학
+- 수업 목표: 자석의 성질을 설명할 수 있다.
+- 수업 내용:
+  (여러 줄이면 각 줄 앞에 공백 2칸)
+
+## 2. 디자인
+- 분위기: 신비로운, 밝고 깨끗한
+- 분위기 설명: 우주 느낌
+- 희망 폰트: (비면 "추천받기")
+- 메인 색: #7FB3E6
+- 기타 디자인 요청: ...
+
+## 3. 페이지 구성 (총 1쪽)
+
+### 1쪽. 표지 [표지]
+- 핵심 내용: 자석의 비밀
+- 발문·활동: ...
+- 이미지·도식: 말굽자석 일러스트
+- 레이아웃 메모: ...
+```
+txt: 같은 내용, 마크다운 문법 없이. 첫 줄 `@미리캔버스`, 제목 `수업용 프레젠테이션 제작 요청서`, `>` 대신 일반 문장, 절 제목은 `[작업 방식]`, `[1. 수업 기본 정보]`…, 페이지 제목은 `■ 1쪽. 표지 (표지)`, 항목은 `- 라벨: 값`, 여러 줄 값은 공백 2칸 들여쓰기. 절 사이 빈 줄 1개.
+
+경계 조건:
+| 함수 | 조건 | 기대 동작 |
+|---|---|---|
+| 공통 | 첫 줄 | md·txt 모두 정확히 `@미리캔버스` (앞 공백·BOM 없음) |
+| validate | audience/subject/goal 빈 값·공백만·undefined | 각각 "수업 대상을 입력해 주세요." / "과목을 입력해 주세요." / "수업 목표를 입력해 주세요." |
+| validate | pages 없음·빈 배열 | "페이지를 1개 이상 추가해 주세요." |
+| validate | 페이지 제목 빈 값 | "N쪽의 제목을 입력해 주세요." (N=1부터) |
+| validate | pages 40개 초과 | "페이지는 40개까지 만들 수 있어요." |
+| validate | data가 null/undefined | 필수 항목 오류 전체 반환(예외 던지지 않음) |
+| buildRequest | 선택 항목(content, moodNote, mainColor, extra, 페이지 선택 항목) 빈 값 | 해당 줄 생략 |
+| buildRequest | moods 빈 배열 | "분위기" 줄 생략 |
+| buildRequest | font 빈 값 | `- 희망 폰트: 추천받기` |
+| buildRequest | 디자인 전체 비어 있음 | 2절에 `- 희망 폰트: 추천받기`만 남음 |
+| buildRequest | page.type 빈 값 | md `### 1쪽. 제목`, txt `■ 1쪽. 제목` (괄호 생략) |
+| buildRequest | 여러 줄 값, CRLF | `\n` 정규화, 첫 줄부터 다음 줄에 공백 2칸 들여쓰기, 빈 줄 유지 안 함(빈 줄 제거) |
+| buildRequest | format이 md/txt 외 | `Error("format은 md 또는 txt")` 던짐 |
+| buildRequest | 출력 끝 | 줄바꿈 1개로 끝남, 3줄 이상 연속 빈 줄 없음 |
+| makeFileName | 과목에 `\ / : * ? " < > |` 또는 공백 | 금지 문자 제거, 공백은 `_` |
+| makeFileName | 과목 빈 값 | `미리캔버스요청서_20261031.md` |
+| makeFileName | 날짜 | 로컬 시간 기준 YYYYMMDD |
+
+### T-002 상세 — 화면
+- 읽을 것: `D:\Program\docs\frontend-design.md`, 이 PLAN의 데이터 형식, `js/generator.js`의 공개 시그니처(위 표; 파일이 아직 없을 수 있음).
+- 대상: 교직원(교사). 존댓말, 효율 중심.
+- 구성: 상단 헤더(서비스 이름 "수업 PPT 요청서 만들기"·한 줄 설명) → 진행 표시(1 수업 정보, 2 디자인, 3 페이지 구성, 4 만들기) → 단계별 카드. 이전/다음 버튼. 단계 표시는 클릭해 이동 가능.
+  1. 수업 정보: 수업 대상(input+datalist: 초등 1~6학년, 중학교 1~3학년, 고등학교 1~3학년), 과목(input+datalist: 국어 수학 사회 과학 영어 도덕 음악 미술 체육 실과 창의적 체험활동), 수업 목표(textarea), 수업 내용(textarea, 선택).
+  2. 디자인: 분위기 프리셋 칩(토글 버튼, aria-pressed) + 분위기 설명 textarea. `<details>` "디자인 자세히 정하기": 희망 폰트(input, 안내: 비워 두면 Claude가 추천), 메인 색(input type=color + 텍스트 입력 동기화, "지정 안 함" 체크 가능), 기타 디자인 요청 textarea.
+  3. 페이지 구성: 페이지 카드 목록. 카드마다 "N쪽" 번호, 제목, 핵심 내용, `<details>` "더 자세히": 페이지 유형 select(PAGE_TYPES), 발문·활동, 이미지·도식, 레이아웃 메모. 위로/아래로/복제/삭제 버튼(aria-label 포함). "페이지 추가" 버튼. 처음엔 빈 페이지 1개. 0개면 빈 상태 안내 문구.
+  4. 만들기: 파일 형식 라디오(.md 기본 / .txt)와 각 형식 한 줄 설명, 미리보기(`<pre>`, buildRequest 결과), "생성" 버튼 → validate 오류가 있으면 오류 목록을 보여 주고 해당 단계로 이동 링크 제공, 없으면 Blob(`text/markdown;charset=utf-8` 또는 `text/plain;charset=utf-8`)으로 다운로드. 다운로드 후 안내: "이 파일을 Claude 또는 Claude Code 대화창에 올리면 미리캔버스로 수업 자료를 만들어 드려요." "복사" 버튼(클립보드 실패 시 안내 문구).
+- 자동 저장: 입력 변경 시 `localStorage["class-maker:draft:v1"]`에 JSON 저장(try/catch, 실패해도 동작). 다시 열면 복원하고 "이전에 쓰던 내용을 불러왔어요." 안내. "새로 쓰기" 버튼(확인 대화상자 후 초기화).
+- 디자인: 흰색 + 연한 파란색, 신비로운 분위기("새벽 하늘·성운" 콘셉트). CSS 변수 토큰, 배경에 은은한 방사형 그라데이션과 작은 별빛 점(CSS만, 이미지 없음), 반투명 유리 카드, 포인트 색은 연파랑~하늘빛. 흔한 보라 그라데이션 금지. 폰트: Google Fonts `Gowun Batang`(제목) + `Noto Sans KR`(본문), 본문 16px 이상. 다크 모드(prefers-color-scheme: dark)는 깊은 남색 밤하늘 + 연파랑 글자, 대비 AA. `prefers-reduced-motion` 존중.
+- 필수: 360px 반응형(가로 스크롤 없음, 좌우 16px), 버튼 44px 이상, 모든 입력에 label, 포커스 표시, 오류는 색 + 아이콘/문구. 개발자 용어 금지.
+- README.md: 서비스 설명, 사용법 3단계, GitHub Pages 배포 방법(Settings → Pages → Deploy from branch → main / root), 로컬 실행(`python -m http.server` 후 브라우저 접속 — ES 모듈이라 file:// 직접 열기 불가 안내), 테스트 `node --test`.
+- 완료 기준: Codex — 문법 오류 없음(`node --check js/app.js`). reviewer(Windows) — 로컬 서버로 열어 360px·데스크톱에서 4단계 입력 → .md/.txt 다운로드 내용 첫 줄 `@미리캔버스` 확인, 자동 저장 복원 확인.
+
+## 마일스톤 승인 기록
+### M1: T-001 + T-002
+- [ ] reviewer가 `node --test` Windows 재실행 통과
+- [ ] 브라우저 점검(360px, 다운로드, 자동 저장)
+- [ ] 범위 준수, 의존성 없음
+- 승인:
+
+### M2: 최종 보안 검토 (사용자 지시 2026-10-31)
+- Opus와 Codex(`-Mode Read`, sol-max)가 **서로의 결과를 보지 않고** 전체 코드를 각각 점검한다.
+- 점검 범위: XSS(사용자 입력을 innerHTML로 넣는 곳), localStorage 파싱 오류·변조 내성, 다운로드 파일명·Blob, 외부 리소스(폰트 CDN)·CSP, 클립보드, 의존성 없음, 저장소에 비밀값 없음.
+- 두 결과를 비교(일치 / 한쪽만 / 오탐)하고 사실 확인한 항목만 수정·보완한다. 결과: `.agent-out/security/compare.md`.
+
+## 배포 (M2 수정·보완 완료 후)
+- 순서: 보안 검토 → 수정·보완 → 테스트 재실행 → git 저장소 생성·푸시 → GitHub Pages 활성화 → 배포 주소 접속 확인.
+- 사용자 승인: 저장소 생성·푸시·배포까지.

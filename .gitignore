@@ -1,0 +1,7 @@
+.agent-out/codex/*.log.md
+node_modules/
+.playwright-mcp/
+private/
+.agent-out/
+.claude/
+*.ttf

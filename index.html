@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="수업 정보와 페이지 구성을 정리해 미리캔버스 수업 PPT 제작 요청서를 만드세요.">
+  <title>수업 PPT 요청서 만들기</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">입력으로 바로 가기</a>
+  <div class="shell">
+    <header class="site-header">
+      <div class="header-copy"><h1>수업 PPT 요청서 만들기</h1>
+      <p id="draft-status" class="save-status" role="status">입력한 내용은 이 브라우저에 자동으로 저장돼요.</p></div>
+      <button id="reset" class="button quiet" type="button">새로 쓰기</button>
+    </header>
+    <nav class="progress" aria-label="요청서 작성 단계">
+      <button type="button" data-step="0" aria-current="step"><span class="step-number">1</span><span>수업 정보</span></button>
+      <button type="button" data-step="1"><span class="step-number">2</span><span>디자인</span></button>
+      <button type="button" data-step="2"><span class="step-number">3</span><span>페이지 구성</span></button>
+      <button type="button" data-step="3"><span class="step-number">4</span><span>만들기</span></button>
+    </nav>
+    <main id="workspace" class="glass" tabindex="-1">
+      <section id="step-0" class="step-panel" aria-labelledby="heading-0">
+        <div class="section-heading"><h2 id="heading-0" tabindex="-1">수업 정보</h2>
+        <p class="section-note">* 필수 항목 · 실제 이름 등 개인정보는 쓰지 마세요.</p></div>
+        <div class="field-grid">
+          <div class="field"><label for="audience">수업 대상 <span aria-hidden="true">*</span></label><input id="audience" maxlength="200" data-group="basics" data-key="audience" list="audience-options" placeholder="예: 초등 3학년" required><datalist id="audience-options"><option value="초등 1학년"></option><option value="초등 2학년"></option><option value="초등 3학년"></option><option value="초등 4학년"></option><option value="초등 5학년"></option><option value="초등 6학년"></option><option value="중학교 1학년"></option><option value="중학교 2학년"></option><option value="중학교 3학년"></option><option value="고등학교 1학년"></option><option value="고등학교 2학년"></option><option value="고등학교 3학년"></option></datalist></div>
+          <div class="field"><label for="subject">과목 <span aria-hidden="true">*</span></label><input id="subject" maxlength="200" data-group="basics" data-key="subject" list="subject-options" placeholder="예: 과학" required><datalist id="subject-options"><option value="국어"></option><option value="수학"></option><option value="사회"></option><option value="과학"></option><option value="영어"></option><option value="도덕"></option><option value="음악"></option><option value="미술"></option><option value="체육"></option><option value="실과"></option><option value="창의적 체험활동"></option></datalist></div>
+        </div>
+        <div class="field-grid">
+          <div class="field"><label for="goal">수업 목표 <span aria-hidden="true">*</span></label><textarea maxlength="3000" id="goal" data-group="basics" data-key="goal" rows="4" placeholder="예: 자석의 성질을 설명할 수 있다." required></textarea></div>
+          <div class="field"><label for="lesson-content">수업 내용 <span class="optional">선택</span></label><textarea maxlength="3000" id="lesson-content" data-group="basics" data-key="content" rows="4" placeholder="수업에서 다룰 개념이나 흐름을 적어 주세요."></textarea></div>
+        </div>
+      </section>
+      <section id="step-1" class="step-panel" aria-labelledby="heading-1" hidden>
+        <div class="section-heading"><h2 id="heading-1" tabindex="-1">디자인</h2>
+        <p class="section-note">분위기는 여러 개 선택할 수 있어요. 비우면 추천받아요.</p></div>
+        <div class="design-grid"><div>
+        <fieldset class="mood-fieldset"><legend>디자인 분위기 <span class="optional">선택</span></legend><div id="mood-chips" class="chips"></div></fieldset>
+        <div class="field"><label for="mood-note">분위기 설명 <span class="optional">선택</span></label><textarea maxlength="3000" id="mood-note" data-group="design" data-key="moodNote" rows="3" placeholder="예: 새벽 하늘처럼 차분하고 신비로운 느낌"></textarea></div>
+        </div><details id="design-details" class="optional-details" open><summary>디자인 자세히 정하기</summary><div class="details-body">
+          <div class="field"><label for="font">희망 폰트 <span class="optional">선택</span></label><input id="font" maxlength="200" data-group="design" data-key="font" aria-describedby="font-help"><p id="font-help" class="help">비워 두면 Claude가 수업에 어울리는 폰트를 추천해 드려요.</p></div>
+          <fieldset class="color-fieldset"><legend>메인 색 <span class="optional">선택</span></legend><label class="check-label" for="color-unset"><input id="color-unset" type="checkbox" checked>지정 안 함</label><div class="color-controls"><label class="sr-only" for="color-picker">메인 색 선택기</label><input id="color-picker" type="color" value="#7FB3E6" disabled><label class="sr-only" for="color-text">메인 색 코드</label><input id="color-text" maxlength="7" type="text" placeholder="#7FB3E6" aria-describedby="color-help color-warning" disabled></div><p id="color-help" class="help">색을 고르거나 #7FB3E6처럼 영문·숫자 6자리 색 코드를 입력해 주세요.</p><p id="color-warning" class="warning" role="status" hidden>ⓘ 색 코드는 # 뒤에 영문 A~F 또는 숫자 6자리로 적어 주세요.</p></fieldset>
+          <div class="field"><label for="design-extra">기타 디자인 요청 <span class="optional">선택</span></label><textarea maxlength="3000" id="design-extra" data-group="design" data-key="extra" rows="3" placeholder="글자 크기, 여백, 피하고 싶은 표현 등을 적어 주세요."></textarea></div>
+        </div></details></div>
+      </section>
+      <section id="step-2" class="step-panel" aria-labelledby="heading-2" hidden>
+        <div class="section-heading"><h2 id="heading-2" tabindex="-1">페이지 구성</h2>
+        <p class="section-note">제목은 필수예요. 나머지는 필요한 만큼 적어 주세요.</p></div>
+        <div class="page-toolbar"><p id="page-count" class="count" aria-live="polite"></p><span>최대 40쪽</span><button id="toggle-page-details" class="button quiet" type="button" aria-controls="pages" aria-expanded="false">모두 펼치기</button></div>
+        <p id="empty-pages" class="empty-state" hidden>아직 페이지가 없어요. ‘페이지 추가’를 눌러 첫 페이지를 만들어 주세요.</p>
+        <div id="pages" class="page-list"><button id="add-page" class="button secondary add-page-card" type="button" aria-describedby="page-limit">＋ 페이지 추가</button></div>
+        <p id="page-limit" class="warning" role="status" hidden>ⓘ 페이지는 40개까지 만들 수 있어요.</p>
+        <p id="page-status" class="help" role="status"></p>
+      </section>
+      <section id="step-3" class="step-panel" aria-labelledby="heading-3" hidden>
+        <div class="section-heading"><h2 id="heading-3" tabindex="-1">요청서 만들기</h2>
+        <p class="section-note">템플릿·폰트를 추천받고 선택한 뒤 제작해요.</p></div>
+        <div class="creation-grid"><div class="creation-controls">
+        <fieldset class="format-fieldset"><legend>내려받을 파일 형식</legend><div class="format-options"><label class="format-option" for="format-md"><input id="format-md" type="radio" name="format" value="md" checked><span><strong>문서형 (.md)</strong><small>제목과 항목이 구분되어 읽기 좋아요.</small></span></label><label class="format-option" for="format-txt"><input id="format-txt" type="radio" name="format" value="txt"><span><strong>일반 글 (.txt)</strong><small>일반 메모장에서도 편하게 열 수 있어요.</small></span></label></div></fieldset>
+        <button id="generate" class="button primary wide" type="button">생성 · 요청서 내려받기</button>
+        <p class="download-note">내려받은 파일을 Claude 또는 Claude Code 대화창에 올려 주세요.</p>
+        <p id="download-status" class="download-note" role="status"></p>
+        <div id="validation-errors" class="error-box" role="region" aria-labelledby="error-title" aria-live="polite" hidden><h3 id="error-title">⚠ 입력 내용을 확인해 주세요.</h3><ul id="error-list"></ul></div>
+        </div><div class="preview-pane">
+        <div class="preview-heading"><h3 id="preview-title">요청서 미리보기</h3><button id="copy" class="button quiet" type="button">복사</button></div>
+        <pre id="preview" tabindex="0" aria-labelledby="preview-title">요청서를 준비하고 있어요.</pre>
+        <p id="copy-status" class="help" role="status"></p>
+        </div></div>
+      </section>
+    </main>
+    <footer class="site-footer">수업을 만드는 선생님의 생각을 돕습니다.<br>입력 내용은 외부로 전송되지 않아요.</footer>
+    <noscript><p class="error-box">화면을 사용하려면 브라우저에서 자바스크립트를 켜 주세요.</p></noscript>
+    <nav class="step-footer" aria-label="단계 이동"><button id="previous" class="button quiet" type="button" disabled>← 이전</button><span id="step-position" class="step-position">1 / 4</span><button id="next" class="button primary" type="button">다음 →</button></nav>
+  </div>
+</body>
+</html>
